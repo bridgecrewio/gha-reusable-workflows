@@ -11,8 +11,8 @@ Sets up Python, installs `pipenv` and the projects dev dependencies and lastly r
 
 ```yaml
 jobs:
-  pre-commit:
-    uses: bridgecrewio/gha-reusable-workflows/.github/workflows/main.yaml@main
+  mypy:
+    uses: bridgecrewio/gha-reusable-workflows/.github/workflows/mypy.yaml@main
     with:
       python-version: "3.11"  # if a specific Python version is needed, defaults to "3.7"
       runner: "ubuntu-20.04"  # if a specific GitHub runner is neded, defaults to "ubuntu-latest"
