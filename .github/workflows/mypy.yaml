@@ -45,7 +45,7 @@ jobs:
       - uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12  # v3
         with:
           path: ${{ env.MYPY_CACHE_DIR }}
-          key: mypy-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles(${{ inputs.cache-dependency-path }}) }}
+          key: mypy-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles(inputs.cache-dependency-path) }}
       - name: Run Mypy
         run: |
           pipenv run mypy
