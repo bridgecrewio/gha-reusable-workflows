@@ -25,9 +25,12 @@ permissions:
 jobs:
   mypy:
     runs-on: ${{ inputs.runner }}
+    env:
+      MYPY_CACHE_DIR: ~/.cache/mypy
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c  # v3.3.0
       - uses: actions/setup-python@5ccb29d8773c3f3f653e1705f474dfaa8a06a912  # v4.4.0
+        id: setup-python
         with:
           python-version: ${{ inputs.python-version }}
           cache: "pipenv"
@@ -39,6 +42,10 @@ jobs:
         run: |
           pipenv --python ${{ inputs.python-version }}
           pipenv install --dev
+      - uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12  # v3
+        with:
+          path: ${{ env.MYPY_CACHE_DIR }}
+          key: mypy-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles(${{ inputs.cache-dependency-path }}) }}
       - name: Run Mypy
         run: |
           pipenv run mypy
