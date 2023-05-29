@@ -1,0 +1,130 @@
+name: publish-image
+
+on:
+  workflow_call:
+    inputs:
+      image_name_dockerhub:
+        description: "Image name for Docker Hub"
+        required: true
+        type: string
+      image_name_ghcr:
+        description: "Image name for GitHub container registry"
+        required: true
+        type: string
+      image_tag_full:
+        description: "Full length image tag"
+        required: true
+        type: string
+      image_tag_short:
+        description: "Short length image tag"
+        required: true
+        type: string
+
+      environment:
+        description: "GitHub environment"
+        default: "release"
+        required: false
+        type: string
+      image_platforms:
+        description: "List of target platforms for build"
+        default: "linux/amd64,linux/arm64"
+        required: false
+        type: string
+      runner:
+        description: "GitHub runner label"
+        default: "ubuntu-latest"
+        required: false
+        type: string
+    secrets:
+      BC_API_KEY:
+        description: "Bridgecrew API key"
+        required: true
+      DOCKERHUB_USERNAME:
+        description: "Docker Hub username"
+        required: true
+      DOCKERHUB_PASSWORD:
+        description: "Docker Hub password"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish-image:
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write  # Enable OIDC
+      packages: write
+    env:
+      DH_IMAGE_NAME: ${{ inputs.image_name_dockerhub }}
+      GHCR_IMAGE_NAME: ${{ inputs.image_name_ghcr }}
+      FULL_IMAGE_TAG: ${{ inputs.image_tag_full }}
+      SHORT_IMAGE_TAG: ${{ inputs.image_tag_short }}
+    steps:
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab  # v3.5.2
+      - uses: sigstore/cosign-installer@dd6b2e2b610a11fd73dd187a43d57cc1394e35f9  # v3.0.5
+      - uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18  # v2.1.0
+        with:
+          platforms: 'arm64,arm'
+      - uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c  # v2.5.0
+      - name: Login to Docker Hub
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a  # v2.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a  # v2.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@c4ee3adeed93b1fa6a762f209fb01608c1a22f1e  # v4.4.0
+        with:
+          images: ${{ env.DH_IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.authors=Bridgecrew
+            org.opencontainers.image.version=${{ env.FULL_IMAGE_TAG }}
+      - name: Build and export image to Docker
+        # buildx changes the driver to 'docker-container' which doesn't expose the image to the host,
+        # so it is built and loaded to Docker and in the next step pushed to the registry
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671  # v4.0.0
+        with:
+          context: .
+          no-cache: true
+          load: true
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          tags: ${{ env.DH_IMAGE_NAME }}:${{ env.FULL_IMAGE_TAG }}
+      - name: Push Docker image
+        id: docker_push
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671  # v4.0.0
+        with:
+          context: .
+          platforms: ${{ inputs.image_platforms }}
+          push: true
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          tags: |
+            ${{ env.GHCR_IMAGE_NAME }}:latest
+            ${{ env.GHCR_IMAGE_NAME }}:${{ env.SHORT_IMAGE_TAG }}
+            ${{ env.GHCR_IMAGE_NAME }}:${{ env.FULL_IMAGE_TAG }}
+      - name: Generate SBOM
+        continue-on-error: true
+        uses: bridgecrewio/checkov-action@master  # use latest and greatest
+        with:
+          api-key: ${{ secrets.BC_API_KEY }}
+          docker_image: ${{ env.DH_IMAGE_NAME }}:${{ env.FULL_IMAGE_TAG }}
+          dockerfile_path: Dockerfile
+          output_format: cyclonedx_json
+          output_file_path: cyclonedx.json,
+      - name: Sign and attest image
+        run: |
+          # sign image
+          cosign sign -y ${{ env.GHCR_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
+          
+          # attest SBOM
+          cosign attest -y \
+            --type cyclonedx \
+            --predicate cyclonedx.json \
+            ${{ env.GHCR_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
