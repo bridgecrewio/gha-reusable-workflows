@@ -106,6 +106,9 @@ jobs:
           push: true
           labels: ${{ steps.docker_meta.outputs.labels }}
           tags: |
+            ${{ env.DH_IMAGE_NAME }}:latest
+            ${{ env.DH_IMAGE_NAME }}:${{ env.SHORT_IMAGE_TAG }}
+            ${{ env.DH_IMAGE_NAME }}:${{ env.FULL_IMAGE_TAG }}
             ${{ env.GHCR_IMAGE_NAME }}:latest
             ${{ env.GHCR_IMAGE_NAME }}:${{ env.SHORT_IMAGE_TAG }}
             ${{ env.GHCR_IMAGE_NAME }}:${{ env.FULL_IMAGE_TAG }}
@@ -124,6 +127,10 @@ jobs:
           cosign sign -y ${{ env.GHCR_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
 
           # attest SBOM
+          cosign attest -y \
+            --type cyclonedx \
+            --predicate cyclonedx.json \
+            ${{ env.DH_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
           cosign attest -y \
             --type cyclonedx \
             --predicate cyclonedx.json \
