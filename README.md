@@ -49,6 +49,7 @@ jobs:
       image_name_ghcr: ghcr.io/${{ github.repository }}
       image_tag_full: 1.2.3
       image_tag_short: 1
+      dockerfile_path: Dockerfile.dev  # if a specific path to the Dockfile is needed, default to "Dockerfile"
       environment: deploy  # if a specific GitHub environment is needed, defaults to "release"
       image_platforms: linux/amd64  # if a specific target platform is needed, defaults to "linux/amd64,linux/arm64"
       runner: "['self-hosted', 'public', 'linux', 'x64']"  # currently it only works for hosted runners
