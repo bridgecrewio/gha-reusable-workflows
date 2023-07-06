@@ -20,6 +20,11 @@ on:
         required: true
         type: string
 
+      dockerfile_path:
+        description: "Path to Dockerfile"
+        default: "Dockerfile"
+        required: false
+        type: string
       environment:
         description: "GitHub environment"
         default: "release"
@@ -93,6 +98,7 @@ jobs:
         uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825  # v4.1.1
         with:
           context: .
+          file: ${{ inputs.dockerfile_path }}
           no-cache: true
           load: true
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -102,6 +108,7 @@ jobs:
         uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825  # v4.1.1
         with:
           context: .
+          file: ${{ inputs.dockerfile_path }}
           platforms: ${{ inputs.image_platforms }}
           push: true
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -118,7 +125,7 @@ jobs:
         with:
           api-key: ${{ secrets.BC_API_KEY }}
           docker_image: ${{ env.DH_IMAGE_NAME }}:${{ env.FULL_IMAGE_TAG }}
-          dockerfile_path: Dockerfile
+          dockerfile_path: ${{ inputs.dockerfile_path }}
           output_format: cyclonedx_json
           output_file_path: cyclonedx.json,
       - name: Sign and attest image
