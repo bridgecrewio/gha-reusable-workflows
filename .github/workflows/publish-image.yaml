@@ -128,17 +128,17 @@ jobs:
           dockerfile_path: ${{ inputs.dockerfile_path }}
           output_format: cyclonedx_json
           output_file_path: cyclonedx.json,
-      - name: Sign and attest image
-        run: |
-          # sign image
-          cosign sign -y ${{ env.GHCR_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
-
-          # attest SBOM
-          cosign attest -y \
-            --type cyclonedx \
-            --predicate cyclonedx.json \
-            ${{ env.DH_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
-          cosign attest -y \
-            --type cyclonedx \
-            --predicate cyclonedx.json \
-            ${{ env.GHCR_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
+#      - name: Sign and attest image
+#        run: |
+#          # sign image
+#          cosign sign -y ${{ env.GHCR_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
+#
+#          # attest SBOM
+#          cosign attest -y \
+#            --type cyclonedx \
+#            --predicate cyclonedx.json \
+#            ${{ env.DH_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
+#          cosign attest -y \
+#            --type cyclonedx \
+#            --predicate cyclonedx.json \
+#            ${{ env.GHCR_IMAGE_NAME }}@${{ steps.docker_push.outputs.digest }}
