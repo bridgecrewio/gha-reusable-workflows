@@ -44,6 +44,9 @@ on:
       BC_API_KEY:
         description: "Bridgecrew API key"
         required: true
+      PRISMA_API_URL:
+        description: "Prisma API url"
+        required: false
       DOCKERHUB_USERNAME:
         description: "Docker Hub username"
         required: true
@@ -124,6 +127,7 @@ jobs:
         uses: bridgecrewio/checkov-action@master  # use latest and greatest
         with:
           api-key: ${{ secrets.BC_API_KEY }}
+          prisma-api-url: ${{ secrets.PRISMA_API_URL }}
           docker_image: ${{ env.DH_IMAGE_NAME }}:${{ env.FULL_IMAGE_TAG }}
           dockerfile_path: ${{ inputs.dockerfile_path }}
           output_format: cyclonedx_json
