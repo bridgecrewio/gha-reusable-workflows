@@ -42,7 +42,7 @@ jobs:
         run: |
           pipenv --python ${{ inputs.python-version }}
           pipenv install --dev
-      - uses: actions/cache@v4.0.2
+      - uses: actions/cache@v4
         with:
           path: ${{ env.MYPY_CACHE_DIR }}
           key: mypy-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles(inputs.cache-dependency-path) }}
